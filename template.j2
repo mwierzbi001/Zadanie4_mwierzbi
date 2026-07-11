@@ -1,0 +1,50 @@
+import ctypes
+
+class {{ class_name }}Structure(ctypes.Structure):
+    _fields_ = [
+        {% for field in fields %}
+        {% if field.type == 'int' %}
+        ('{{ field.name }}', ctypes.c_int32),
+        {% elif field.type == 'float' %}
+        ('{{ field.name }}', ctypes.c_float),
+        {% elif field.type == 'str' %}
+        ('{{ field.name }}', ctypes.c_char * {{ field.size }}),
+        {% endif %}
+        {% endfor %}
+    ]
+
+class {{ class_name }}:
+    def __init__(self, {% for field in fields %}{{ field.name }}{% if not loop.last %}, {% endif %}{% endfor %}):
+        {% for field in fields %}
+        self.{{ field.name }} = {{ field.name }}
+        {% endfor %}
+
+    def serialize(self) -> bytes:
+        # Tworzymy surową strukturę ctypes
+        struct_instance = {{ class_name }}Structure()
+
+        {% for field in fields %}
+        {% if field.type == 'str' %}
+        struct_instance.{{ field.name }} = self.{{ field.name }}.encode('utf-8')
+        {% else %}
+        struct_instance.{{ field.name }} = self.{{ field.name }}
+        {% endif %}
+        {% endfor %}
+
+        # Przekształcamy strukturę bezpośrednio w bajty
+        return bytes(struct_instance)
+
+    @classmethod
+    def deserialize(cls, data: bytes):
+        # Odtwarzamy strukturę z bajtów
+        struct_instance = {{ class_name }}Structure.from_buffer_copy(data)
+
+        return cls(
+            {% for field in fields %}
+            {% if field.type == 'str' %}
+            {{ field.name }}=struct_instance.{{ field.name }}.decode('utf-8').strip('\x00'){% if not loop.last %},{% endif %}
+            {% else %}
+            {{ field.name }}=struct_instance.{{ field.name }}{% if not loop.last %},{% endif %}
+            {% endif %}
+            {% endfor %}
+        )
