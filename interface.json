@@ -1,0 +1,8 @@
+{
+  "class_name": "SensorReport",
+  "fields": [
+    {"name": "sensor_id", "type": "int"},
+    {"name": "reading", "type": "float"},
+    {"name": "status_code", "type": "str", "size": 16}
+  ]
+}
